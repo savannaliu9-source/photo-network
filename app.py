@@ -108,6 +108,12 @@ def upload_images():
     save_data(db)
     return jsonify({'uploaded': uploaded})
 
+@app.route('/api/stickers')
+def get_stickers():
+    db = load_data()
+    stickers = list(db.get('stickers', {}).values())
+    return jsonify({'stickers': stickers})
+
 @app.route('/api/sticker', methods=['POST'])
 def upload_sticker():
     files = request.files.getlist('stickers')
