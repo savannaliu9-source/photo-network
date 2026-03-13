@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>照片网络</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; color: #eee; min-height: 100vh; }
+        
+        .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+        
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .header h1 { font-size: 1.8rem; background: linear-gradient(135deg, #667eea, #764ba2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        
+        .upload-section { background: #16213e; border-radius: 12px; padding: 24px; margin-bottom: 20px; }
+        .upload-section h2 { margin-bottom: 16px; font-size: 1.2rem; }
+        
+        .upload-area { border: 2px dashed #4a5568; border-radius: 8px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s; }
+        .upload-area:hover { border-color: #667eea; background: rgba(102, 126, 234, 0.1); }
+        .upload-area input { display: none; }
+        
+        .btn { background: linear-gradient(135deg, #667eea, #764ba2); border: none; color: white; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 1rem; transition: transform 0.2s; }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .network-section { background: #16213e; border-radius: 12px; padding: 20px; min-height: 600px; position: relative; }
+        .network-section h2 { margin-bottom: 16px; font-size: 1.2rem; }
+        
+        #network { width: 100%; height: 560px; background: #0f0f23; border-radius: 8px; }
+        
+        .node circle { stroke: #fff; stroke-width: 2px; cursor: pointer; transition: all 0.3s; }
+        .node:hover circle { stroke-width: 4px; filter: drop-shadow(0 0 10px rgba(102, 126, 234, 0.8)); }
+        
+        .link { stroke: #4a5568; stroke-opacity: 0.6; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; justify-content: center; align-items: center; cursor: pointer; }
+        .modal.active { display: flex; }
+        .modal img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 20px 60px rgba(0,0,0,0.5); }
+        
+        .share-section { margin-top: 20px; padding: 16px; background: #16213e; border-radius: 12px; }
+        .share-link { display: flex; gap: 10px; align-items: center; }
+        .share-link input { flex: 1; padding: 12px; border-radius: 8px; border: 1px solid #4a5568; background: #0f0f23; color: #eee; }
+        
+        .controls { display: flex; gap: 10px; margin-top: 16px; }
+        .controls .btn { padding: 8px 16px; font-size: 0.9rem; }
+        
+        .tooltip { position: absolute; background: #2d3748; padding: 8px 12px; border-radius: 6px; font-size: 0.85rem; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+        
+        #loading { display: none; text-align: center; padding: 20px; }
+        #loading.active { display: block; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📷 照片网络</h1>
+        </div>
+        
+        <div class="upload-section" id="uploadSection">
+            <h2>上传照片</h2>
+            <div class="upload-area" id="uploadArea">
+                <input type="file" id="fileInput" multiple accept="image/*">
+                <p>点击选择图片或拖拽到这里</p>
+                <p style="color: #888; font-size: 0.9rem; margin-top: 8px;">支持 PNG, JPG, GIF, WebP</p>
+            </div>
+            <div class="controls">
+                <button class="btn" id="uploadBtn">上传图片</button>
+                <button class="btn" id="generateBtn" style="background: #48bb78;">生成网络</button>
+            </div>
+            <div id="loading">
+                <p>上传中...</p>
+            </div>
+        </div>
+        
+        <div class="share-section" id="shareSection" style="display: none;">
+            <h2>分享你的网络</h2>
+            <div class="share-link">
+                <input type="text" id="shareLink" readonly>
+                <button class="btn" onclick="copyLink()">复制链接</button>
+            </div>
+        </div>
+        
+        <div class="network-section">
+            <h2>网络视图</h2>
+            <div id="network"></div>
+        </div>
+    </div>
+    
+    <div class="modal" id="modal">
+        <img src="" alt="预览">
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        let networkId = new URLSearchParams(window.location.search).get('id');
+        let images = [];
+        let nodes = [];
+        
+        if (networkId) {
+            loadNetwork(networkId);
+            document.getElementById('uploadSection').style.display = 'none';
+        }
+        
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => { e.preventDefault(); uploadArea.style.borderColor = '#667eea'; });
+        uploadArea.addEventListener('dragleave', () => { uploadArea.style.borderColor = '#4a5568'; });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#4a5568';
+            fileInput.files = e.dataTransfer.files;
+            handleFiles(e.dataTransfer.files);
+        });
+        
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        async function handleFiles(files) {
+            if (!files.length) return;
+            
+            document.getElementById('loading').classList.add('active');
+            
+            const formData = new FormData();
+            for (let file of files) {
+                formData.append('images', file);
+            }
+            
+            if (!networkId) {
+                const res = await fetch('/api/network', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({name: 'My Photo Network'})
+                });
+                const data = await res.json();
+                networkId = data.network_id;
+                window.history.pushState({}, '', `/?id=${networkId}`);
+            }
+            
+            formData.append('network_id', networkId);
+            
+            const res = await fetch('/api/upload', { method: 'POST', body: formData });
+            const data = await res.json();
+            
+            document.getElementById('loading').classList.remove('active');
+            
+            if (data.uploaded) {
+                images = [...images, ...data.uploaded];
+                alert(`成功上传 ${data.uploaded.length} 张图片！`);
+                refreshNetwork();
+            }
+        }
+        
+        async function refreshNetwork() {
+            const res = await fetch(`/api/network/${networkId}`);
+            const data = await res.json();
+            if (data.nodes) {
+                images = data.nodes;
+                if (images.length > 0) {
+                    generateAndDraw();
+                }
+            }
+        }
+        
+        document.getElementById('uploadBtn').addEventListener('click', () => fileInput.click());
+        
+        document.getElementById('generateBtn').addEventListener('click', generateAndDraw);
+        
+        function generateAndDraw() {
+            if (images.length === 0) {
+                refreshNetwork();
+                return;
+            }
+            
+            const nodesData = images.map((img, i) => ({
+                id: img.id,
+                image: img.data,
+                x: Math.random() * 800 + 100,
+                y: Math.random() * 500 + 50
+            }));
+            
+            const links = [];
+            for (let i = 1; i < nodesData.length; i++) {
+                const target = Math.floor(Math.random() * i);
+                links.push({ source: nodesData[target].id, target: nodesData[i].id });
+            }
+            
+            drawNetwork(nodesData, links);
+            
+            const shareUrl = `${window.location.origin}/?id=${networkId}`;
+            document.getElementById('shareLink').value = shareUrl;
+            document.getElementById('shareSection').style.display = 'block';
+        }
+        
+        function drawNetwork(nodesData, linksData) {
+            const container = document.getElementById('network');
+            container.innerHTML = '';
+            
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            const svg = d3.select('#network')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+            
+            const g = svg.append('g');
+            
+            svg.call(d3.zoom()
+                .scaleExtent([0.3, 3])
+                .on('zoom', (event) => g.attr('transform', event.transform)));
+            
+            const simulation = d3.forceSimulation(nodesData)
+                .force('link', d3.forceLink(linksData).id(d => d.id).distance(150))
+                .force('charge', d3.forceManyBody().strength(-300))
+                .force('center', d3.forceCenter(width / 2, height / 2))
+                .force('collision', d3.forceCollide().radius(50));
+            
+            const link = g.selectAll('.link')
+                .data(linksData)
+                .enter().append('line')
+                .attr('class', 'link')
+                .attr('stroke-width', 2);
+            
+            const defs = svg.append('defs');
+            
+            nodesData.forEach(node => {
+                const pattern = defs.append('pattern')
+                    .attr('id', `pattern-${node.id}`)
+                    .attr('width', 1)
+                    .attr('height', 1);
+                
+                pattern.append('rect')
+                    .attr('width', 80)
+                    .attr('height', 80)
+                    .attr('fill', '#16213e');
+                
+                pattern.append('image')
+                    .attr('xlink:href', node.image)
+                    .attr('width', 80)
+                    .attr('height', 80)
+                    .attr('preserveAspectRatio', 'xMidYMid slice');
+            });
+            
+            const node = g.selectAll('.node')
+                .data(nodesData)
+                .enter().append('g')
+                .attr('class', 'node')
+                .call(d3.drag()
+                    .on('start', dragstarted)
+                    .on('drag', dragged)
+                    .on('end', dragended));
+            
+            node.append('circle')
+                .attr('r', 40)
+                .attr('fill', d => `url(#pattern-${d.id})`)
+                .on('click', (event, d) => showModal(d.image))
+                .on('mouseover', (event, d) => {
+                    const tooltip = document.getElementById('tooltip');
+                    tooltip.style.opacity = 1;
+                    tooltip.style.left = event.pageX + 10 + 'px';
+                    tooltip.style.top = event.pageY + 10 + 'px';
+                    tooltip.textContent = '点击查看大图';
+                })
+                .on('mouseout', () => {
+                    document.getElementById('tooltip').style.opacity = 0;
+                });
+            
+            simulation.on('tick', () => {
+                link
+                    .attr('x1', d => d.source.x)
+                    .attr('y1', d => d.source.y)
+                    .attr('x2', d => d.target.x)
+                    .attr('y2', d => d.target.y);
+                
+                node.attr('transform', d => `translate(${d.x},${d.y})`);
+            });
+            
+            function dragstarted(event) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                event.subject.fx = event.subject.x;
+                event.subject.fy = event.subject.y;
+            }
+            
+            function dragged(event) {
+                event.subject.fx = event.x;
+                event.subject.fy = event.y;
+            }
+            
+            function dragended(event) {
+                if (!event.active) simulation.alphaTarget(0);
+                event.subject.fx = null;
+                event.subject.fy = null;
+            }
+        }
+        
+        async function loadNetwork(id) {
+            const res = await fetch(`/api/network/${id}`);
+            if (!res.ok) {
+                alert('网络不存在');
+                return;
+            }
+            
+            const data = await res.json();
+            images = data.nodes || [];
+            
+            if (images.length > 0) {
+                generateAndDraw();
+            }
+            
+            document.getElementById('shareLink').value = window.location.href;
+            document.getElementById('shareSection').style.display = 'block';
+        }
+        
+        function showModal(src) {
+            const modal = document.getElementById('modal');
+            modal.querySelector('img').src = src;
+            modal.classList.add('active');
+        }
+        
+        document.getElementById('modal').addEventListener('click', () => {
+            document.getElementById('modal').classList.remove('active');
+        });
+        
+        function copyLink() {
+            const input = document.getElementById('shareLink');
+            input.select();
+            document.execCommand('copy');
+            alert('链接已复制！');
+        }
+    </script>
+</body>
+</html>
