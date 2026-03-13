@@ -10,9 +10,9 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.65);
-            --glass-border: rgba(255, 255, 255, 0.5);
-            --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --wood-light: #d4a574;
+            --wood-medium: #b8956e;
+            --wood-dark: #8b6914;
         }
         
         body {
@@ -22,6 +22,18 @@
             overflow-x: hidden;
         }
         
+        .bg-image {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0.3;
+            z-index: -1;
+        }
+        
         .bg-pattern {
             position: fixed;
             top: 0;
@@ -29,9 +41,8 @@
             width: 100%;
             height: 100%;
             background-image: 
-                radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.12) 0%, transparent 40%),
-                radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%);
+                radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.12) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.1) 0%, transparent 40%);
             z-index: -1;
         }
         
@@ -42,12 +53,12 @@
         }
         
         .glass-card {
-            background: var(--glass-bg);
+            background: rgba(255, 255, 255, 0.7);
             backdrop-filter: blur(20px);
             -webkit-backdrop-filter: blur(20px);
-            border: 1px solid var(--glass-border);
+            border: 1px solid rgba(255, 255, 255, 0.5);
             border-radius: 24px;
-            box-shadow: var(--glass-shadow);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
         }
         
         .header {
@@ -67,31 +78,6 @@
             color: #6b7280;
             margin-top: 8px;
             font-size: 0.95rem;
-        }
-        
-        .header .decorations {
-            position: absolute;
-            width: 100%;
-            top: 50%;
-            transform: translateY(-50%);
-            pointer-events: none;
-        }
-        
-        .header .decoration {
-            position: absolute;
-            font-size: 1.8rem;
-            animation: float 3s ease-in-out infinite;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-        }
-        
-        .header .decoration:nth-child(1) { left: 8%; animation-delay: 0s; }
-        .header .decoration:nth-child(2) { left: 22%; animation-delay: 0.5s; }
-        .header .decoration:nth-child(3) { right: 22%; animation-delay: 1s; }
-        .header .decoration:nth-child(4) { right: 8%; animation-delay: 1.5s; }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-12px) rotate(5deg); }
         }
         
         .upload-section {
@@ -171,15 +157,6 @@
             box-shadow: 0 8px 30px rgba(16, 185, 129, 0.5);
         }
         
-        .sticker-btn {
-            background: linear-gradient(135deg, #f472b6, #fb7185);
-            box-shadow: 0 4px 20px rgba(244, 114, 182, 0.35);
-        }
-        
-        .sticker-btn:hover {
-            box-shadow: 0 8px 30px rgba(244, 114, 182, 0.5);
-        }
-        
         .controls {
             display: flex;
             gap: 15px;
@@ -206,80 +183,9 @@
             width: 100%;
             height: 550px;
             border-radius: 16px;
-            background: rgba(255,255,255,0.4);
+            background: rgba(255,255,255,0.5);
             border: 1px solid rgba(255,255,255,0.5);
             overflow: hidden;
-        }
-        
-        .node rect {
-            stroke: rgba(255,255,255,0.8);
-            stroke-width: 4px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.15));
-        }
-        
-        .node:hover rect {
-            stroke: #8b5cf6;
-            stroke-width: 5px;
-            filter: drop-shadow(0 8px 25px rgba(139, 92, 246, 0.4));
-        }
-        
-        .link {
-            stroke: rgba(139, 92, 246, 0.25);
-            stroke-opacity: 0.6;
-            stroke-width: 2;
-        }
-        
-        .share-section {
-            margin-top: 25px;
-            padding: 25px;
-        }
-        
-        .share-section h2 {
-            margin-bottom: 15px;
-            font-size: 1.1rem;
-            color: #6b7280;
-        }
-        
-        .share-link {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-            flex-wrap: wrap;
-        }
-        
-        .share-link input {
-            flex: 1;
-            min-width: 250px;
-            padding: 14px 18px;
-            border-radius: 14px;
-            border: 1px solid #e5e7eb;
-            background: rgba(255,255,255,0.8);
-            color: #374151;
-            font-size: 0.9rem;
-            backdrop-filter: blur(10px);
-        }
-        
-        .share-link input:focus {
-            outline: none;
-            border-color: #8b5cf6;
-        }
-        
-        .btn-copy {
-            background: rgba(255,255,255,0.8);
-            border: 1px solid #e5e7eb;
-            padding: 14px 24px;
-            border-radius: 14px;
-            color: #374151;
-            cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 500;
-        }
-        
-        .btn-copy:hover {
-            background: #f3f4f6;
-            transform: translateY(-2px);
         }
         
         .modal {
@@ -289,7 +195,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255,255,255,0.9);
+            background: rgba(255,255,255,0.95);
             backdrop-filter: blur(15px);
             z-index: 1000;
             justify-content: center;
@@ -314,9 +220,8 @@
         .modal img {
             max-width: 100%;
             max-height: 85vh;
-            border-radius: 20px;
-            box-shadow: 0 25px 80px rgba(0,0,0,0.15);
-            border: 3px solid white;
+            border-radius: 4px;
+            box-shadow: 0 25px 80px rgba(0,0,0,0.2);
         }
         
         .modal .close-hint {
@@ -353,48 +258,36 @@
         
         @media (max-width: 768px) {
             .header h1 { font-size: 1.8rem; }
-            .header .decoration { display: none; }
             .upload-area { padding: 30px; }
             .controls { flex-direction: column; }
             .controls .btn { width: 100%; }
         }
         
-        .footer-decorations {
+        .page-decorations {
             position: fixed;
-            bottom: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 25px;
-            opacity: 0.6;
             pointer-events: none;
+            z-index: 100;
         }
         
-        .footer-decorations span {
-            font-size: 1.5rem;
-            animation: bounce 2.5s ease-in-out infinite;
+        .page-decorations .sticker {
+            position: absolute;
+            font-size: 2.5rem;
+            animation: floatSticker 4s ease-in-out infinite;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
         }
         
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-10px) rotate(10deg); }
-        }
+        .page-decorations .sticker:nth-child(1) { top: 10%; left: 5%; animation-delay: 0s; }
+        .page-decorations .sticker:nth-child(2) { top: 20%; right: 8%; animation-delay: 0.5s; font-size: 2rem; }
+        .page-decorations .sticker:nth-child(3) { top: 40%; left: 3%; animation-delay: 1s; }
+        .page-decorations .sticker:nth-child(4) { top: 60%; right: 5%; animation-delay: 1.5s; font-size: 2.2rem; }
+        .page-decorations .sticker:nth-child(5) { top: 80%; left: 8%; animation-delay: 2s; }
+        .page-decorations .sticker:nth-child(6) { top: 75%; right: 10%; animation-delay: 2.5s; font-size: 1.8rem; }
+        .page-decorations .sticker:nth-child(7) { top: 35%; left: 8%; animation-delay: 3s; font-size: 2rem; }
+        .page-decorations .sticker:nth-child(8) { top: 55%; right: 3%; animation-delay: 3.5s; }
         
-        .sticker-area {
-            margin-top: 15px;
-            padding: 20px;
-            background: rgba(244, 114, 182, 0.1);
-            border-radius: 16px;
-            border: 1px dashed rgba(244, 114, 182, 0.3);
-        }
-        
-        .sticker-area h3 {
-            color: #be185d;
-            font-size: 0.95rem;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        @keyframes floatSticker {
+            0%, 100% { transform: translateY(0) rotate(-5deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
         }
         
         .sticker-preview {
@@ -408,24 +301,27 @@
             width: 50px;
             height: 50px;
             border-radius: 10px;
-            border: 2px solid white;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             object-fit: contain;
-            background: white;
         }
     </style>
 </head>
 <body>
+    <div class="bg-image" id="bgImage"></div>
     <div class="bg-pattern"></div>
+    
+    <div class="page-decorations" id="pageDecorations">
+        <span class="sticker">🌸</span>
+        <span class="sticker">✨</span>
+        <span class="sticker">💖</span>
+        <span class="sticker">⭐</span>
+        <span class="sticker">🎀</span>
+        <span class="sticker">🌙</span>
+        <span class="sticker">💫</span>
+        <span class="sticker">🦋</span>
+    </div>
     
     <div class="container">
         <div class="header">
-            <div class="decorations">
-                <span class="decoration">✨</span>
-                <span class="decoration">🌸</span>
-                <span class="decoration">💖</span>
-                <span class="decoration">⭐</span>
-            </div>
             <h1>📷 观察日记</h1>
             <p class="subtitle">记录美好瞬间 · 分享温暖时刻</p>
         </div>
@@ -443,27 +339,9 @@
                 <button class="btn secondary" id="generateBtn">✨ 生成网络</button>
             </div>
             
-            <div class="sticker-area">
-                <h3>🎀 上传贴纸素材（自动抠图）</h3>
-                <div class="upload-area" id="stickerArea" style="padding: 25px;">
-                    <input type="file" id="stickerInput" multiple accept="image/*">
-                    <span class="icon">🎀</span>
-                    <p>上传贴纸素材，自动去除背景</p>
-                </div>
-                <div class="sticker-preview" id="stickerPreview"></div>
-            </div>
-            
             <div id="loading">
                 <div class="loading-spinner"></div>
                 <p>上传中，请稍候...</p>
-            </div>
-        </div>
-        
-        <div class="share-section glass-card" id="shareSection" style="display: none;">
-            <h2>🔗 分享链接</h2>
-            <div class="share-link">
-                <input type="text" id="shareLink" readonly>
-                <button class="btn-copy" onclick="copyLink()">复制链接</button>
             </div>
         </div>
         
@@ -479,23 +357,27 @@
             <p class="close-hint">点击任意位置关闭</p>
         </div>
     </div>
-    
-    <div class="footer-decorations">
-        <span style="animation-delay: 0s;">💫</span>
-        <span style="animation-delay: 0.3s;">🎀</span>
-        <span style="animation-delay: 0.6s;">🌙</span>
-        <span style="animation-delay: 0.9s;">✨</span>
-    </div>
 
     <script>
         let networkId = new URLSearchParams(window.location.search).get('id');
         let images = [];
-        let stickers = [];
+        let bgImage = null;
+        
+        const defaultStickers = ['🌸', '✨', '💖', '⭐', '🎀', '🌙', '💫', '🦋', '🌻', '🍀', '🦄', '🎨'];
         
         if (networkId) {
             loadNetwork(networkId);
             document.getElementById('uploadSection').style.display = 'none';
         }
+        
+        function updateDecorations() {
+            const container = document.getElementById('pageDecorations');
+            const stickers = container.querySelectorAll('.sticker');
+            stickers.forEach((sticker, i) => {
+                sticker.textContent = defaultStickers[i % defaultStickers.length];
+            });
+        }
+        updateDecorations();
         
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
@@ -522,40 +404,6 @@
         });
         
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
-        
-        const stickerArea = document.getElementById('stickerArea');
-        const stickerInput = document.getElementById('stickerInput');
-        
-        stickerArea.addEventListener('click', () => stickerInput.click());
-        
-        stickerInput.addEventListener('change', async (e) => {
-            if (!e.target.files.length) return;
-            
-            document.getElementById('loading').classList.add('active');
-            
-            const formData = new FormData();
-            for (let file of e.target.files) {
-                formData.append('stickers', file);
-            }
-            
-            const res = await fetch('/api/sticker', { method: 'POST', body: formData });
-            const data = await res.json();
-            
-            document.getElementById('loading').classList.remove('active');
-            
-            if (data.stickers) {
-                stickers = [...stickers, ...data.stickers];
-                renderStickerPreview();
-                alert(`✨ 成功上传 ${data.stickers.length} 张贴纸！`);
-            }
-        });
-        
-        function renderStickerPreview() {
-            const preview = document.getElementById('stickerPreview');
-            preview.innerHTML = stickers.map(s => 
-                `<img src="${s.data}" alt="贴纸">`
-            ).join('');
-        }
         
         async function handleFiles(files) {
             if (!files.length) return;
@@ -587,6 +435,12 @@
             
             if (data.uploaded) {
                 images = [...images, ...data.uploaded];
+                
+                if (!bgImage && data.uploaded.length > 0) {
+                    bgImage = data.uploaded[0].data;
+                    document.getElementById('bgImage').style.backgroundImage = `url(${bgImage})`;
+                }
+                
                 alert(`✨ 成功上传 ${data.uploaded.length} 张图片！`);
                 refreshNetwork();
             }
@@ -598,6 +452,10 @@
             if (data.nodes) {
                 images = data.nodes;
                 if (images.length > 0) {
+                    if (!bgImage) {
+                        bgImage = images[0].data;
+                        document.getElementById('bgImage').style.backgroundImage = `url(${bgImage})`;
+                    }
                     generateAndDraw();
                 }
             }
@@ -618,8 +476,8 @@
                 image: img.data,
                 x: Math.random() * 800 + 100,
                 y: Math.random() * 500 + 50,
-                rotation: (Math.random() - 0.5) * 12,
-                sticker: stickers.length > 0 ? stickers[i % stickers.length] : null
+                rotation: (Math.random() - 0.5) * 15,
+                sticker: defaultStickers[i % defaultStickers.length]
             }));
             
             const links = [];
@@ -629,10 +487,6 @@
             }
             
             drawNetwork(nodesData, links);
-            
-            const shareUrl = `${window.location.origin}/?id=${networkId}`;
-            document.getElementById('shareLink').value = shareUrl;
-            document.getElementById('shareSection').style.display = 'block';
         }
         
         function drawNetwork(nodesData, linksData) {
@@ -662,7 +516,9 @@
             const link = g.selectAll('.link')
                 .data(linksData)
                 .enter().append('line')
-                .attr('class', 'link');
+                .attr('class', 'link')
+                .attr('stroke', 'rgba(139, 92, 246, 0.25)')
+                .attr('stroke-width', 2);
             
             const defs = svg.append('defs');
             
@@ -674,25 +530,56 @@
                     .attr('patternTransform', `rotate(${node.rotation})`);
                 
                 pattern.append('rect')
+                    .attr('width', 120)
+                    .attr('height', 120)
+                    .attr('fill', '#fff8f0');
+                
+                const clipPath = defs.append('clipPath')
+                    .attr('id', `clip-${node.id}`);
+                
+                clipPath.append('rect')
                     .attr('width', 110)
                     .attr('height', 110)
-                    .attr('fill', '#ffffff')
-                    .attr('rx', 16);
+                    .attr('x', 5)
+                    .attr('y', 5);
                 
                 pattern.append('image')
                     .attr('xlink:href', node.image)
                     .attr('width', 110)
                     .attr('height', 110)
+                    .attr('x', 5)
+                    .attr('y', 5)
                     .attr('preserveAspectRatio', 'xMidYMid slice')
-                    .attr('rx', 16);
+                    .attr('clip-path', `url(#clip-${node.id})`);
+                
+                for (let i = 0; i < 12; i++) {
+                    const angle = (i / 12) * Math.PI * 2;
+                    const x = 60 + Math.cos(angle) * 55;
+                    const y = 60 + Math.sin(angle) * 55;
+                    const size = 3 + Math.random() * 4;
+                    
+                    pattern.append('circle')
+                        .attr('cx', x)
+                        .attr('cy', y)
+                        .attr('r', size)
+                        .attr('fill', i % 2 === 0 ? '#b8956e' : '#d4a574');
+                }
                 
                 pattern.append('rect')
-                    .attr('width', 110)
-                    .attr('height', 110)
+                    .attr('width', 120)
+                    .attr('height', 120)
                     .attr('fill', 'none')
-                    .attr('stroke', 'rgba(255,255,255,0.9)')
-                    .attr('stroke-width', 4)
-                    .attr('rx', 16);
+                    .attr('stroke', '#8b6914')
+                    .attr('stroke-width', 8)
+                    .attr('rx', 2);
+                
+                pattern.append('rect')
+                    .attr('width', 120)
+                    .attr('height', 120)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#d4a574')
+                    .attr('stroke-width', 3)
+                    .attr('rx', 2);
             });
             
             const node = g.selectAll('.node')
@@ -705,12 +592,12 @@
                     .on('end', dragended));
             
             node.append('rect')
-                .attr('x', -55)
-                .attr('y', -55)
-                .attr('width', 110)
-                .attr('height', 110)
-                .attr('rx', 16)
+                .attr('x', -60)
+                .attr('y', -60)
+                .attr('width', 120)
+                .attr('height', 120)
                 .attr('fill', d => `url(#pattern-${d.id})`)
+                .attr('filter', 'drop-shadow(0 4px 8px rgba(0,0,0,0.2))')
                 .on('click', (event, d) => showModal(d.image))
                 .on('mouseover', function(event, d) {
                     d3.select(this)
@@ -725,43 +612,13 @@
                         .attr('transform', 'scale(1)');
                 });
             
-            if (stickers.length > 0) {
-                nodesData.forEach((node, i) => {
-                    if (node.sticker) {
-                        const stickerPattern = defs.append('pattern')
-                            .attr('id', `sticker-${node.id}`)
-                            .attr('width', 1)
-                            .attr('height', 1);
-                        
-                        stickerPattern.append('rect')
-                            .attr('width', 40)
-                            .attr('height', 40)
-                            .attr('fill', 'transparent');
-                        
-                        stickerPattern.append('image')
-                            .attr('xlink:href', node.sticker.data)
-                            .attr('width', 40)
-                            .attr('height', 40)
-                            .attr('preserveAspectRatio', 'xMidYMid meet');
-                        
-                        const stickerGroup = g.append('g')
-                            .attr('class', 'sticker-node')
-                            .attr('transform', `translate(${node.x || width/2}, ${node.y || height/2})`);
-                        
-                        stickerGroup.append('circle')
-                            .attr('r', 22)
-                            .attr('fill', 'white')
-                            .attr('filter', 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))');
-                        
-                        stickerGroup.append('rect')
-                            .attr('x', -18)
-                            .attr('y', -18)
-                            .attr('width', 36)
-                            .attr('height', 36)
-                            .attr('fill', `url(#sticker-${node.id})`);
-                    }
-                });
-            }
+            node.append('text')
+                .attr('x', 0)
+                .attr('y', 5)
+                .attr('text-anchor', 'middle')
+                .attr('font-size', '2rem')
+                .attr('pointer-events', 'none')
+                .text(d => d.sticker);
             
             simulation.on('tick', () => {
                 link
@@ -771,9 +628,6 @@
                     .attr('y2', d => d.target.y);
                 
                 node.attr('transform', d => `translate(${d.x},${d.y})`);
-                
-                g.selectAll('.sticker-node')
-                    .attr('transform', d => `translate(${d.x + 50},${d.y - 50})`);
             });
             
             function dragstarted(event) {
@@ -805,11 +659,10 @@
             images = data.nodes || [];
             
             if (images.length > 0) {
+                bgImage = images[0].data;
+                document.getElementById('bgImage').style.backgroundImage = `url(${bgImage})`;
                 generateAndDraw();
             }
-            
-            document.getElementById('shareLink').value = window.location.href;
-            document.getElementById('shareSection').style.display = 'block';
         }
         
         function showModal(src) {
@@ -821,13 +674,6 @@
         document.getElementById('modal').addEventListener('click', () => {
             document.getElementById('modal').classList.remove('active');
         });
-        
-        function copyLink() {
-            const input = document.getElementById('shareLink');
-            input.select();
-            document.execCommand('copy');
-            alert('✨ 链接已复制！');
-        }
     </script>
 </body>
 </html>
