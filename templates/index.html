@@ -10,8 +10,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.55);
-            --glass-border: rgba(255, 255, 255, 0.4);
+            --glass-bg: rgba(255, 255, 255, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.5);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
         
@@ -30,7 +30,7 @@
             height: 100%;
             background-size: cover;
             background-position: center;
-            opacity: 0.6;
+            opacity: 1;
             z-index: -1;
         }
         
@@ -41,9 +41,9 @@
             width: 100%;
             height: 100%;
             background: 
-                radial-gradient(ellipse at 15% 20%, rgba(255, 240, 245, 0.8) 0%, transparent 50%),
-                radial-gradient(ellipse at 85% 80%, rgba(245, 235, 220, 0.8) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(255, 250, 245, 0.6) 0%, transparent 70%);
+                radial-gradient(ellipse at 15% 20%, rgba(255, 240, 245, 0.7) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 80%, rgba(245, 235, 220, 0.7) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(255, 250, 245, 0.5) 0%, transparent 70%);
             z-index: -1;
         }
         
@@ -108,7 +108,7 @@
             margin-bottom: 12px;
         }
         
-        .upload-area:hover {
+        .upload-area:hover, .upload-area.dragover {
             border-color: #b8956e;
             background: rgba(255, 252, 248, 0.6);
         }
@@ -136,7 +136,7 @@
             background: rgba(255, 240, 240, 0.3);
         }
         
-        .sticker-upload-area:hover {
+        .sticker-upload-area:hover, .sticker-upload-area.dragover {
             border-color: #d48383;
             background: rgba(255, 230, 230, 0.5);
         }
@@ -282,16 +282,26 @@
         
         .default-sticker {
             position: absolute;
-            font-size: 1.8rem;
+            font-size: 2rem;
             animation: floatSticker 5s ease-in-out infinite;
             filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-            opacity: 0.7;
             pointer-events: none;
         }
         
         @keyframes floatSticker {
             0%, 100% { transform: translateY(0) rotate(-3deg); }
             50% { transform: translateY(-10px) rotate(3deg); }
+        }
+        
+        .error-msg {
+            color: #d48383;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .error-msg.show {
+            display: block;
         }
     </style>
 </head>
@@ -312,15 +322,17 @@
             <div class="upload-area" id="uploadArea">
                 <input type="file" id="fileInput" multiple accept="image/*">
                 <span class="icon">📷</span>
-                <p>点击选择图片</p>
+                <p>点击选择或拖拽图片到这里</p>
             </div>
+            <p class="error-msg" id="photoError"></p>
             
             <h2 style="margin-top: 15px;">上传贴纸</h2>
             <div class="sticker-upload-area" id="stickerUploadArea">
                 <input type="file" id="stickerFileInput" multiple accept="image/*">
                 <span class="icon">🎀</span>
-                <p>上传贴纸作装饰</p>
+                <p>点击选择或拖拽贴纸到这里</p>
             </div>
+            <p class="error-msg" id="stickerError"></p>
             
             <button class="btn" id="generateBtn">生成网络</button>
             
@@ -349,7 +361,7 @@
         let bgImage = null;
         let customStickers = [];
         
-        const defaultStickers = ['🌸', '✨', '💖', '⭐', '🎀', '🌙', '💫', '🦋'];
+        const defaultStickers = ['🌸', '✨', '💖', '⭐', '🎀', '🌙', '💫', '🦋', '🌻', '🍀'];
         
         if (networkId) {
             loadNetwork(networkId);
@@ -363,21 +375,31 @@
         
         function renderDefaultStickers() {
             const container = document.getElementById('pageStickers');
+            
             const positions = [
-                {top: '5%', left: '3%'}, {top: '8%', right: '5%'},
-                {top: '25%', left: '2%'}, {top: '20%', right: '3%'},
-                {top: '50%', left: '4%'}, {top: '45%', right: '5%'},
-                {top: '70%', left: '3%'}, {top: '65%', right: '4%'},
-                {top: '85%', left: '5%'}, {top: '80%', right: '3%'}
+                {top: '3%', left: '2%'},
+                {top: '8%', left: '15%'},
+                {top: '5%', right: '3%'},
+                {top: '15%', right: '12%'},
+                {top: '35%', left: '1%'},
+                {top: '30%', right: '2%'},
+                {top: '55%', left: '5%'},
+                {top: '50%', right: '8%'},
+                {top: '75%', left: '3%'},
+                {top: '70%', right: '5%'},
+                {top: '90%', left: '8%'},
+                {top: '85%', right: '15%'}
             ];
             
             defaultStickers.forEach((emoji, i) => {
                 const span = document.createElement('span');
                 span.className = 'default-sticker';
                 span.textContent = emoji;
-                const pos = positions[i % positions.length];
-                Object.assign(span.style, pos);
-                span.style.animationDelay = (i * 0.5) + 's';
+                const pos = positions[i];
+                if (pos) {
+                    Object.assign(span.style, pos);
+                }
+                span.style.animationDelay = (i * 0.4) + 's';
                 container.appendChild(span);
             });
         }
@@ -403,9 +425,9 @@
                 img.className = 'page-sticker';
                 img.src = sticker;
                 img.dataset.index = i;
-                img.style.width = '50px';
-                img.style.left = (5 + Math.random() * 85) + '%';
-                img.style.top = (5 + Math.random() * 80) + '%';
+                img.style.width = '55px';
+                img.style.left = (3 + Math.random() * 88) + '%';
+                img.style.top = (3 + Math.random() * 88) + '%';
                 img.style.animationDelay = (Math.random() * 3) + 's';
                 
                 makeDraggable(img);
@@ -465,43 +487,96 @@
         
         initPage();
         
+        // Photo upload
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         
         uploadArea.addEventListener('click', () => fileInput.click());
         
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            handleFiles(e.dataTransfer.files);
+        });
+        
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         
+        // Sticker upload
         const stickerUploadArea = document.getElementById('stickerUploadArea');
         const stickerFileInput = document.getElementById('stickerFileInput');
         
         stickerUploadArea.addEventListener('click', () => stickerFileInput.click());
         
-        stickerFileInput.addEventListener('change', async (e) => {
-            if (!e.target.files.length) return;
+        stickerUploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            stickerUploadArea.classList.add('dragover');
+        });
+        
+        stickerUploadArea.addEventListener('dragleave', () => {
+            stickerUploadArea.classList.remove('dragover');
+        });
+        
+        stickerUploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            stickerUploadArea.classList.remove('dragover');
+            stickerFileInput.files = e.dataTransfer.files;
+            handleStickerUpload(e.dataTransfer.files);
+        });
+        
+        stickerFileInput.addEventListener('change', (e) => handleStickerUpload(e.target.files));
+        
+        async function handleStickerUpload(files) {
+            if (!files.length) return;
             
+            const errorEl = document.getElementById('stickerError');
+            errorEl.classList.remove('show');
             document.getElementById('loading').classList.add('active');
             
             const formData = new FormData();
-            for (let file of e.target.files) {
+            for (let file of files) {
                 formData.append('stickers', file);
             }
             
-            const res = await fetch('/api/sticker', { method: 'POST', body: formData });
-            const data = await res.json();
-            
-            document.getElementById('loading').classList.remove('active');
-            
-            if (data.stickers) {
-                customStickers = [...customStickers, ...data.stickers];
-                renderCustomStickers();
-                alert('贴纸上传成功！');
+            try {
+                const res = await fetch('/api/sticker', { 
+                    method: 'POST', 
+                    body: formData 
+                });
+                const data = await res.json();
+                
+                document.getElementById('loading').classList.remove('active');
+                
+                if (data.stickers) {
+                    customStickers = [...customStickers, ...data.stickers];
+                    renderCustomStickers();
+                    alert('贴纸上传成功！');
+                } else if (data.error) {
+                    errorEl.textContent = data.error;
+                    errorEl.classList.add('show');
+                }
+            } catch (err) {
+                document.getElementById('loading').classList.remove('active');
+                errorEl.textContent = '上传失败，请重试';
+                errorEl.classList.add('show');
+                console.error('Upload error:', err);
             }
-        });
+        }
         
         async function handleFiles(files) {
             if (!files.length) return;
             
+            const errorEl = document.getElementById('photoError');
+            errorEl.classList.remove('show');
             document.getElementById('loading').classList.add('active');
             
             const formData = new FormData();
@@ -522,21 +597,30 @@
             
             formData.append('network_id', networkId);
             
-            const res = await fetch('/api/upload', { method: 'POST', body: formData });
-            const data = await res.json();
-            
-            document.getElementById('loading').classList.remove('active');
-            
-            if (data.uploaded) {
-                images = [...images, ...data.uploaded];
+            try {
+                const res = await fetch('/api/upload', { method: 'POST', body: formData });
+                const data = await res.json();
                 
-                if (!bgImage && data.uploaded.length > 0) {
-                    bgImage = data.uploaded[0].data;
-                    document.getElementById('bgImage').style.backgroundImage = 'url(' + bgImage + ')';
+                document.getElementById('loading').classList.remove('active');
+                
+                if (data.uploaded) {
+                    images = [...images, ...data.uploaded];
+                    
+                    if (!bgImage && data.uploaded.length > 0) {
+                        bgImage = data.uploaded[0].data;
+                        document.getElementById('bgImage').style.backgroundImage = 'url(' + bgImage + ')';
+                    }
+                    
+                    alert('成功上传 ' + data.uploaded.length + ' 张图片！');
+                    refreshNetwork();
+                } else if (data.error) {
+                    errorEl.textContent = data.error;
+                    errorEl.classList.add('show');
                 }
-                
-                alert('成功上传 ' + data.uploaded.length + ' 张图片！');
-                refreshNetwork();
+            } catch (err) {
+                document.getElementById('loading').classList.remove('active');
+                errorEl.textContent = '上传失败，请重试';
+                errorEl.classList.add('show');
             }
         }
         
