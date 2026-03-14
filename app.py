@@ -1,8 +1,7 @@
 import os
 import uuid
 import base64
-import psycopg2
-from psycopg2.extras import RealDictCursor
+import psycopg
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
@@ -10,8 +9,7 @@ app = Flask(__name__)
 DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://photo_network_user:56zWIQKw4MCNJ7wJirU9RgDwSrghIoGp@dpg-d6qhetvgi27c73a3cos0-a/photo_network')
 
 def get_db():
-    conn = psycopg2.connect(DATABASE_URL)
-    conn.row_factory = RealDictCursor
+    conn = psycopg.connect(DATABASE_URL)
     return conn
 
 def init_db():
@@ -67,10 +65,10 @@ def get_network(network_id):
         return jsonify({'error': 'Network not found'}), 404
     
     c.execute('SELECT id, data FROM images WHERE network_id = %s', (network_id,))
-    images = [{'id': row['id'], 'data': row['data']} for row in c.fetchall()]
+    images = [{'id': r[0], 'data': r[1]} for r in c.fetchall()]
     conn.close()
     
-    return jsonify({'name': row['name'], 'nodes': images})
+    return jsonify({'name': row[0], 'nodes': images})
 
 @app.route('/api/upload', methods=['POST'])
 def upload_images():
@@ -107,10 +105,10 @@ def get_stickers():
     stickers = []
     for row in c.fetchall():
         stickers.append({
-            'src': row['data'],
-            'x': row['x'] if row['x'] else 50,
-            'y': row['y'] if row['y'] else 50,
-            'size': row['size'] if row['size'] else 55
+            'src': row[0],
+            'x': row[1] if row[1] else 50,
+            'y': row[2] if row[2] else 50,
+            'size': row[3] if row[3] else 55
         })
     conn.close()
     return jsonify({'stickers': stickers})
@@ -176,7 +174,7 @@ def get_image(img_id):
     
     if not row:
         return jsonify({'error': 'Image not found'}), 404
-    return jsonify({'data': row['data']})
+    return jsonify({'data': row[0]})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
