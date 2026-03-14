@@ -507,13 +507,19 @@
         
         async function saveStickerPositions() {
             const stickers = [];
+            const container = document.getElementById('pageStickers');
+            const containerWidth = container.offsetWidth || window.innerWidth;
+            const containerHeight = container.offsetHeight || window.innerHeight;
+            
             document.querySelectorAll('.page-sticker').forEach(el => {
                 const rect = el.getBoundingClientRect();
-                const containerRect = document.getElementById('pageStickers').getBoundingClientRect();
+                const centerX = el.offsetLeft + rect.width / 2;
+                const centerY = el.offsetTop + rect.height / 2;
+                
                 stickers.push({
                     src: el.src,
-                    x: ((el.offsetLeft + rect.width/2) / containerRect.width) * 100,
-                    y: ((el.offsetTop + rect.height/2) / containerRect.height) * 100,
+                    x: (centerX / containerWidth) * 100,
+                    y: (centerY / containerHeight) * 100,
                     size: parseFloat(el.dataset.size) || 55
                 });
             });
@@ -524,6 +530,7 @@
                     headers: {'Content-Type': 'application/json'},
                     body: JSON.stringify({stickers: stickers})
                 });
+                console.log('Stickers saved:', stickers.length);
             } catch (e) {
                 console.log('Failed to save stickers');
             }
