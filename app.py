@@ -1,14 +1,18 @@
 import os
 import uuid
 import base64
-import psycopg
+import requests
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 
-DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://photo_network_user:56zWIQKw4MCNJ7wJirU9RgDwSrghIoGp@dpg-d6qhetvgi27c73a3cos0-a/photo_network')
+SUPABASE_URL = 'https://zjgkohdajelhuyevksho.supabase.co'
+SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpqZ2tvaGRhamVsaHV5ZXZrc2hvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM0NzQ0ODIsImV4cCI6MjA4OTA1MDQ4Mn0.WcD8Alx5BJOM8UEIE_4dry_df9sKQ00pfc52sGiYQwU'
+BUCKET_NAME = 'photos'
 
 def get_db():
+    import psycopg
+    DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://photo_network_user:56zWIQKw4MCNJ7wJirU9RgDwSrghIoGp@dpg-d6qhetvgi27c73a3cos0-a/photo_network')
     conn = psycopg.connect(DATABASE_URL)
     return conn
 
@@ -18,13 +22,16 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS networks
                  (id TEXT PRIMARY KEY, name TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
     c.execute('''CREATE TABLE IF NOT EXISTS images
-                 (id TEXT PRIMARY KEY, network_id TEXT, data TEXT)''')
+                 (id TEXT PRIMARY KEY, network_id TEXT, data TEXT, supabase_url TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS stickers
                  (id SERIAL PRIMARY KEY, data TEXT, x REAL, y REAL, size REAL)''')
     conn.commit()
     conn.close()
 
-init_db()
+try:
+    init_db()
+except:
+    pass
 
 def get_ext(filename):
     if '.' in filename:
@@ -34,6 +41,19 @@ def get_ext(filename):
 def allowed_file(filename):
     ext = get_ext(filename)
     return ext in {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+
+def upload_to_supabase(file_data, filename, content_type):
+    headers = {
+        'Authorization': f'Bearer {SUPABASE_KEY}',
+        'Content-Type': content_type,
+        'x-upsert': 'true'
+    }
+    file_path = f'{uuid.uuid4()}_{filename}'
+    url = f'{SUPABASE_URL}/storage/v1/object/{BUCKET_NAME}/{file_path}'
+    resp = requests.post(url, headers=headers, data=file_data)
+    if resp.status_code in [200, 201]:
+        return f'{SUPABASE_URL}/storage/v1/object/public/{BUCKET_NAME}/{file_path}'
+    return None
 
 @app.route('/')
 def index():
@@ -64,8 +84,13 @@ def get_network(network_id):
         conn.close()
         return jsonify({'error': 'Network not found'}), 404
     
-    c.execute('SELECT id, data FROM images WHERE network_id = %s', (network_id,))
-    images = [{'id': r[0], 'data': r[1]} for r in c.fetchall()]
+    c.execute('SELECT id, data, supabase_url FROM images WHERE network_id = %s', (network_id,))
+    images = []
+    for r in c.fetchall():
+        img_data = r[1]
+        if r[2]:
+            img_data = r[2]
+        images.append({'id': r[0], 'data': img_data})
     conn.close()
     
     return jsonify({'name': row[0], 'nodes': images})
@@ -85,13 +110,21 @@ def upload_images():
     for file in files:
         if file and allowed_file(file.filename):
             img_id = str(uuid.uuid4())[:8]
-            img_data = base64.b64encode(file.read()).decode('utf-8')
+            file_content = file.read()
             ext = get_ext(file.filename)
             mime_type = f'image/{ext}' if ext != 'jpg' else 'image/jpeg'
             
-            c.execute('INSERT INTO images (id, network_id, data) VALUES (%s, %s, %s)',
-                      (img_id, network_id, f'data:{mime_type};base64,{img_data}'))
-            uploaded.append({'id': img_id, 'filename': file.filename})
+            supabase_url = upload_to_supabase(file_content, file.filename, mime_type)
+            
+            if supabase_url:
+                c.execute('INSERT INTO images (id, network_id, supabase_url) VALUES (%s, %s, %s)',
+                          (img_id, network_id, supabase_url))
+                uploaded.append({'id': img_id, 'filename': file.filename, 'data': supabase_url})
+            else:
+                img_data = base64.b64encode(file_content).decode('utf-8')
+                c.execute('INSERT INTO images (id, network_id, data) VALUES (%s, %s, %s)',
+                          (img_id, network_id, f'data:{mime_type};base64,{img_data}'))
+                uploaded.append({'id': img_id, 'filename': file.filename})
     
     conn.commit()
     conn.close()
@@ -168,13 +201,15 @@ def save_stickers():
 def get_image(img_id):
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT data FROM images WHERE id = %s', (img_id,))
+    c.execute('SELECT data, supabase_url FROM images WHERE id = %s', (img_id,))
     row = c.fetchone()
     conn.close()
     
     if not row:
         return jsonify({'error': 'Image not found'}), 404
-    return jsonify({'data': row[0]})
+    
+    img_data = row[0] if row[0] else row[1]
+    return jsonify({'data': img_data})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
