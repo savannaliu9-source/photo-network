@@ -2,10 +2,12 @@ import os
 import uuid
 import base64
 import sqlite3
+import requests
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
 DB_FILE = 'photo_network.db'
+GITHUB_TOKEN = os.environ.get('GITHUB_TOKEN', '')
 
 def get_db():
     conn = sqlite3.connect(DB_FILE)
@@ -178,3 +180,37 @@ def get_image(img_id):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
+
+@app.route('/api/share', methods=['POST'])
+def share_to_gist():
+    if not GITHUB_TOKEN:
+        return jsonify({'error': 'Share feature not configured'}), 500
+    
+    data = request.json
+    html_content = data.get('content', '')
+    
+    if not html_content:
+        return jsonify({'error': 'No content'}), 400
+    
+    gist_data = {
+        'description': 'Time Capsule - Photo Network',
+        'public': True,
+        'files': {
+            'time-capsule.html': {
+                'content': html_content
+            }
+        }
+    }
+    
+    headers = {
+        'Authorization': f'token {GITHUB_TOKEN}',
+        'Accept': 'application/vnd.github.v3+json'
+    }
+    
+    resp = requests.post('https://api.github.com/gists', json=gist_data, headers=headers)
+    
+    if resp.status_code == 201:
+        result = resp.json()
+        return jsonify({'url': result.get('html_url')})
+    else:
+        return jsonify({'error': 'Failed to create gist'}), 500

@@ -993,13 +993,32 @@
 </body>
 </html>`;
             
-            const blob = new Blob([exportContent], {type: 'text/html'});
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'time-capsule-' + new Date().toISOString().slice(0,10) + '.html';
-            a.click();
-            URL.revokeObjectURL(url);
+            const btn = document.getElementById('exportBtn');
+            btn.textContent = '上传中...';
+            btn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/share', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({content: exportContent})
+                });
+                const data = await res.json();
+                
+                btn.textContent = '分享链接';
+                btn.disabled = false;
+                
+                if (data.url) {
+                    await navigator.clipboard.writeText(data.url);
+                    alert('链接已复制到剪贴板！\n\n' + data.url + '\n\n直接发给对方打开即可！');
+                } else {
+                    alert('分享失败: ' + (data.error || '请重试'));
+                }
+            } catch (err) {
+                btn.textContent = '分享链接';
+                btn.disabled = false;
+                alert('分享失败: ' + err.message);
+            }
         });
     </script>
 </body>
