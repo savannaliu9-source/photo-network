@@ -833,6 +833,7 @@
                 .attr('width', 90)
                 .attr('height', 90)
                 .attr('fill', d => 'url(#pattern-' + d.id + ')')
+                .attr('data-image', d => d.image)
                 .attr('filter', 'drop-shadow(0 3px 6px rgba(0,0,0,0.12))')
                 .on('click', (event, d) => showModal(d.image))
                 .on('mouseover', function(event, d) {
@@ -977,20 +978,13 @@
         
         document.querySelectorAll('#network .node').forEach(node => {
             node.addEventListener('click', function(e) {
-                const rect = this.querySelector('rect');
+                const rect = this.querySelector('rect[data-image]');
                 if (rect) {
-                    const fill = rect.getAttribute('fill');
-                    if (fill && fill.startsWith('url(#pattern-')) {
-                        const patternId = fill.replace('url(#', '').replace(')', '');
-                        const pattern = document.getElementById(patternId);
-                        if (pattern) {
-                            const img = pattern.querySelector('image');
-                            if (img) {
-                                const modal = document.getElementById('modal');
-                                modal.querySelector('img').src = img.getAttribute('href') || img.getAttribute('xlink:href');
-                                modal.classList.add('active');
-                            }
-                        }
+                    const imgSrc = rect.getAttribute('data-image');
+                    if (imgSrc) {
+                        const modal = document.getElementById('modal');
+                        modal.querySelector('img').src = imgSrc;
+                        modal.classList.add('active');
                     }
                 }
             });
