@@ -10,15 +10,15 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.2);
-            --glass-border: rgba(152, 216, 200, 0.5);
+            --glass-bg: rgba(152, 216, 200, 0.35);
+            --glass-border: rgba(255, 255, 255, 0.4);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
             --mint-blue: #98D8C8;
         }
         
         body {
             font-family: 'Playfair Display', 'Noto Sans SC', serif;
-            background: linear-gradient(180deg, #fdf6f0 0%, #f5ebe0 50%, #e8ddd4 100%);
+            background: linear-gradient(180deg, #b3fbec 0%, #dffcf8 50%, #e8ddd4 100%);
             min-height: 100vh;
             overflow-x: hidden;
         }
@@ -78,9 +78,11 @@
         }
         
         .header .subtitle {
-            color: #7a7a7a;
+            font-family: 'Playfair Display', serif;
+            color: #5a5a5a;
             margin-top: 6px;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
+            font-style: italic;
         }
         
         .upload-section {
@@ -99,19 +101,19 @@
         }
         
         .upload-area {
-            border: 1px dashed rgba(152, 216, 200, 0.8);
+            border: 1px dashed rgba(152, 216, 200, 0.9);
             border-radius: 20px;
             padding: 30px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.25);
+            background: rgba(152, 216, 200, 0.25);
             margin-bottom: 12px;
         }
         
         .upload-area:hover, .upload-area.dragover {
             border-color: #98D8C8;
-            background: rgba(152, 216, 200, 0.3);
+            background: rgba(152, 216, 200, 0.4);
         }
         
         .upload-area input { display: none; }
@@ -128,13 +130,13 @@
         }
         
         .sticker-upload-area {
-            border: 1px dashed rgba(152, 216, 200, 0.8);
+            border: 1px dashed rgba(152, 216, 200, 0.9);
             border-radius: 20px;
             padding: 25px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: rgba(152, 216, 200, 0.15);
+            background: rgba(152, 216, 200, 0.2);
         }
         
         .sticker-upload-area:hover, .sticker-upload-area.dragover {
@@ -171,9 +173,10 @@
         }
         
         .network-section h2 {
+            font-family: 'Playfair Display', serif;
             margin-bottom: 15px;
-            font-size: 1.1rem;
-            color: #4a4a4a;
+            font-size: 1.2rem;
+            color: #3a5a50;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -184,7 +187,7 @@
             width: 100%;
             height: 500px;
             border-radius: 16px;
-            background: rgba(255, 255, 255, 0.15);
+            background: rgba(152, 216, 200, 0.3);
             border: 1px solid rgba(152, 216, 200, 0.5);
             overflow: hidden;
         }
@@ -196,7 +199,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 252, 248, 0.95);
+            background: rgba(90, 230, 223, 0.95);
             backdrop-filter: blur(20px);
             z-index: 1000;
             justify-content: center;
@@ -270,12 +273,6 @@
             filter: drop-shadow(0 3px 6px rgba(0,0,0,0.15));
             transition: transform 0.1s;
             user-select: none;
-            animation: stickerFloat 3s ease-in-out infinite;
-        }
-        
-        @keyframes stickerFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-15px); }
         }
         
         .page-sticker:hover {
@@ -342,7 +339,7 @@
     <div class="container">
         <div class="header">
             <h1>观察日记</h1>
-            <p class="subtitle">记录美好瞬间</p>
+            <p class="subtitle">why a raven is like a writing desk</p>
         </div>
         
         <div class="upload-section glass-card" id="uploadSection">
@@ -371,7 +368,7 @@
         </div>
         
         <div class="network-section glass-card">
-            <h2>捕梦网</h2>
+            <h2>Time Capsule</h2>
             <div id="network"></div>
         </div>
     </div>
