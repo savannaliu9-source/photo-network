@@ -123,6 +123,15 @@ def upload_sticker():
     
     return jsonify({'stickers': list(all_stickers.values())})
 
+@app.route('/api/stickers', methods=['POST'])
+def save_stickers():
+    data = request.json
+    stickers = data.get('stickers', [])
+    db = load_data()
+    db['stickers'] = {str(i): s for i, s in enumerate(stickers)}
+    save_data(db)
+    return jsonify({'success': True})
+
 @app.route('/api/image/<img_id>')
 def get_image(img_id):
     db = load_data()

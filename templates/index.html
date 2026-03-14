@@ -10,8 +10,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         :root {
-            --glass-bg: rgba(255, 255, 255, 0.6);
-            --glass-border: rgba(255, 255, 255, 0.5);
+            --glass-bg: rgba(255, 255, 255, 0.35);
+            --glass-border: rgba(255, 255, 255, 0.25);
             --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
         }
         
@@ -104,13 +104,13 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.3);
             margin-bottom: 12px;
         }
         
         .upload-area:hover, .upload-area.dragover {
             border-color: #b8956e;
-            background: rgba(255, 252, 248, 0.6);
+            background: rgba(255, 252, 248, 0.5);
         }
         
         .upload-area input { display: none; }
@@ -133,12 +133,12 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            background: rgba(255, 240, 240, 0.3);
+            background: rgba(255, 240, 240, 0.25);
         }
         
         .sticker-upload-area:hover, .sticker-upload-area.dragover {
             border-color: #d48383;
-            background: rgba(255, 230, 230, 0.5);
+            background: rgba(255, 230, 230, 0.4);
         }
         
         .sticker-upload-area input { display: none; }
@@ -183,8 +183,8 @@
             width: 100%;
             height: 500px;
             border-radius: 16px;
-            background: rgba(255, 255, 255, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             overflow: hidden;
         }
         
@@ -280,18 +280,33 @@
             z-index: 101;
         }
         
-        .default-sticker {
-            position: absolute;
-            font-size: 2rem;
-            animation: floatSticker 5s ease-in-out infinite;
-            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.1));
-            pointer-events: none;
+        .sticker-controls {
+            position: fixed;
+            display: none;
+            gap: 8px;
+            z-index: 200;
         }
         
-        @keyframes floatSticker {
-            0%, 100% { transform: translateY(0) rotate(-3deg); }
-            50% { transform: translateY(-10px) rotate(3deg); }
+        .sticker-controls.show {
+            display: flex;
         }
+        
+        .sticker-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .sticker-btn.zoom-in { background: #fff; color: #333; }
+        .sticker-btn.zoom-out { background: #fff; color: #333; }
+        .sticker-btn.delete { background: #ff6b6b; color: #fff; }
         
         .error-msg {
             color: #d48383;
@@ -310,6 +325,12 @@
     <div class="bg-pattern"></div>
     
     <div class="page-stickers" id="pageStickers"></div>
+    
+    <div class="sticker-controls" id="stickerControls">
+        <button class="sticker-btn zoom-in" onclick="adjustStickerSize(1.2)">+</button>
+        <button class="sticker-btn zoom-out" onclick="adjustStickerSize(0.8)">-</button>
+        <button class="sticker-btn delete" onclick="deleteSticker()">×</button>
+    </div>
     
     <div class="container">
         <div class="header">
@@ -360,8 +381,7 @@
         let images = [];
         let bgImage = null;
         let customStickers = [];
-        
-        const defaultStickers = ['🌸', '✨', '💖', '⭐', '🎀', '🌙', '💫', '🦋', '🌻', '🍀'];
+        let selectedSticker = null;
         
         if (networkId) {
             loadNetwork(networkId);
@@ -370,38 +390,6 @@
         
         async function initPage() {
             await loadCustomStickers();
-            renderDefaultStickers();
-        }
-        
-        function renderDefaultStickers() {
-            const container = document.getElementById('pageStickers');
-            
-            const positions = [
-                {top: '3%', left: '2%'},
-                {top: '8%', left: '15%'},
-                {top: '5%', right: '3%'},
-                {top: '15%', right: '12%'},
-                {top: '35%', left: '1%'},
-                {top: '30%', right: '2%'},
-                {top: '55%', left: '5%'},
-                {top: '50%', right: '8%'},
-                {top: '75%', left: '3%'},
-                {top: '70%', right: '5%'},
-                {top: '90%', left: '8%'},
-                {top: '85%', right: '15%'}
-            ];
-            
-            defaultStickers.forEach((emoji, i) => {
-                const span = document.createElement('span');
-                span.className = 'default-sticker';
-                span.textContent = emoji;
-                const pos = positions[i];
-                if (pos) {
-                    Object.assign(span.style, pos);
-                }
-                span.style.animationDelay = (i * 0.4) + 's';
-                container.appendChild(span);
-            });
         }
         
         async function loadCustomStickers() {
@@ -425,15 +413,90 @@
                 img.className = 'page-sticker';
                 img.src = sticker;
                 img.dataset.index = i;
+                img.dataset.size = 55;
                 img.style.width = '55px';
                 img.style.left = (3 + Math.random() * 88) + '%';
                 img.style.top = (3 + Math.random() * 88) + '%';
                 img.style.animationDelay = (Math.random() * 3) + 's';
                 
+                img.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectSticker(img);
+                });
+                
                 makeDraggable(img);
                 container.appendChild(img);
             });
         }
+        
+        function selectSticker(el) {
+            if (selectedSticker) {
+                selectedSticker.style.outline = 'none';
+            }
+            selectedSticker = el;
+            selectedSticker.style.outline = '2px dashed #8b5cf6';
+            
+            const controls = document.getElementById('stickerControls');
+            controls.classList.add('show');
+            
+            const rect = el.getBoundingClientRect();
+            controls.style.left = (rect.left + rect.width / 2 - 50) + 'px';
+            controls.style.top = (rect.top - 45) + 'px';
+        }
+        
+        function adjustStickerSize(factor) {
+            if (!selectedSticker) return;
+            let currentSize = parseFloat(selectedSticker.dataset.size) || 55;
+            let newSize = currentSize * factor;
+            if (newSize < 20) newSize = 20;
+            if (newSize > 200) newSize = 200;
+            selectedSticker.dataset.size = newSize;
+            selectedSticker.style.width = newSize + 'px';
+            
+            const controls = document.getElementById('stickerControls');
+            const rect = selectedSticker.getBoundingClientRect();
+            controls.style.left = (rect.left + rect.width / 2 - 50) + 'px';
+            controls.style.top = (rect.top - 45) + 'px';
+        }
+        
+        function deleteSticker() {
+            if (!selectedSticker) return;
+            const idx = parseInt(selectedSticker.dataset.index);
+            selectedSticker.remove();
+            customStickers.splice(idx, 1);
+            
+            selectedSticker = null;
+            document.getElementById('stickerControls').classList.remove('show');
+            
+            saveStickerPositions();
+        }
+        
+        async function saveStickerPositions() {
+            const stickers = [];
+            document.querySelectorAll('.page-sticker').forEach(el => {
+                stickers.push(el.src);
+            });
+            
+            try {
+                await fetch('/api/stickers', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({stickers: stickers})
+                });
+            } catch (e) {
+                console.log('Failed to save stickers');
+            }
+        }
+        
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.page-sticker') && !e.target.closest('.sticker-controls')) {
+                if (selectedSticker) {
+                    selectedSticker.style.outline = 'none';
+                    selectedSticker = null;
+                    document.getElementById('stickerControls').classList.remove('show');
+                }
+            }
+        });
         
         function makeDraggable(el) {
             let isDragging = false;
@@ -482,12 +545,13 @@
                 document.removeEventListener('touchmove', drag);
                 document.removeEventListener('mouseup', stopDrag);
                 document.removeEventListener('touchend', stopDrag);
+                
+                saveStickerPositions();
             }
         }
         
         initPage();
         
-        // Photo upload
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
         
@@ -511,7 +575,6 @@
         
         fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         
-        // Sticker upload
         const stickerUploadArea = document.getElementById('stickerUploadArea');
         const stickerFileInput = document.getElementById('stickerFileInput');
         
@@ -568,7 +631,6 @@
                 document.getElementById('loading').classList.remove('active');
                 errorEl.textContent = '上传失败，请重试';
                 errorEl.classList.add('show');
-                console.error('Upload error:', err);
             }
         }
         
@@ -647,13 +709,14 @@
                 return;
             }
             
+            const defaultEmoji = ['🌸', '✨', '💖', '⭐', '🎀', '🌙', '🦋', '💫'];
             const nodesData = images.map((img, i) => ({
                 id: img.id,
                 image: img.data,
                 x: Math.random() * 300 + 80,
                 y: Math.random() * 350 + 80,
                 rotation: (Math.random() - 0.5) * 10,
-                sticker: defaultStickers[i % defaultStickers.length]
+                sticker: defaultEmoji[i % defaultEmoji.length]
             }));
             
             const links = [];
