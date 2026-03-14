@@ -113,6 +113,8 @@ def get_stickers():
     conn.close()
     return jsonify({'stickers': stickers})
 
+import random
+
 @app.route('/api/sticker', methods=['POST'])
 def upload_sticker():
     files = request.files.getlist('stickers')
@@ -129,8 +131,12 @@ def upload_sticker():
             ext = get_ext(file.filename)
             mime_type = f'image/{ext}' if ext != 'jpg' else 'image/jpeg'
             
+            x = 5 + random.random() * 85
+            y = 5 + random.random() * 85
+            size = 60 + random.random() * 30
+            
             c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
-                      (f'data:{mime_type};base64,{img_data}', 50, 50, 55))
+                      (f'data:{mime_type};base64,{img_data}', x, y, size))
     
     conn.commit()
     conn.close()
