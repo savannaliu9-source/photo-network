@@ -192,6 +192,8 @@
             overflow: hidden;
         }
         
+        }
+        
         .modal {
             display: none;
             position: fixed;
@@ -199,8 +201,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(90, 230, 223, 0.95);
-            backdrop-filter: blur(20px);
+            background: rgba(152, 216, 200, 0.4);
+            backdrop-filter: blur(8px);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -415,12 +417,27 @@
             customStickers.forEach((sticker, i) => {
                 const img = document.createElement('img');
                 img.className = 'page-sticker';
-                img.src = sticker;
+                
+                let stickerData = sticker;
+                let posX, posY, size;
+                
+                if (typeof sticker === 'object' && sticker.src) {
+                    img.src = sticker.src;
+                    posX = sticker.x || (3 + Math.random() * 88);
+                    posY = sticker.y || (3 + Math.random() * 88);
+                    size = sticker.size || 55;
+                } else {
+                    img.src = sticker;
+                    posX = 3 + Math.random() * 88;
+                    posY = 3 + Math.random() * 88;
+                    size = 55;
+                }
+                
                 img.dataset.index = i;
-                img.dataset.size = 55;
-                img.style.width = '55px';
-                img.style.left = (3 + Math.random() * 88) + '%';
-                img.style.top = (3 + Math.random() * 88) + '%';
+                img.dataset.size = size;
+                img.style.width = size + 'px';
+                img.style.left = posX + '%';
+                img.style.top = posY + '%';
                 img.style.animationDelay = (Math.random() * 3) + 's';
                 
                 img.addEventListener('click', (e) => {
@@ -478,7 +495,14 @@
         async function saveStickerPositions() {
             const stickers = [];
             document.querySelectorAll('.page-sticker').forEach(el => {
-                stickers.push(el.src);
+                const rect = el.getBoundingClientRect();
+                const containerRect = document.getElementById('pageStickers').getBoundingClientRect();
+                stickers.push({
+                    src: el.src,
+                    x: ((el.offsetLeft + rect.width/2) / containerRect.width) * 100,
+                    y: ((el.offsetTop + rect.height/2) / containerRect.height) * 100,
+                    size: parseFloat(el.dataset.size) || 55
+                });
             });
             
             try {
