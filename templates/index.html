@@ -237,29 +237,6 @@
             font-size: 0.8rem;
         }
         
-        #loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            color: #8a7a6a;
-        }
-        
-        #loading.active { display: block; }
-        
-        .loading-spinner {
-            width: 32px;
-            height: 32px;
-            border: 2px solid rgba(184, 149, 110, 0.2);
-            border-top-color: #b8956e;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        
         .page-stickers {
             position: fixed;
             pointer-events: none;
@@ -369,11 +346,6 @@
             
             <button class="btn" id="generateBtn">生成网络</button>
             <button class="btn" id="exportBtn" style="margin-top: 10px; background: linear-gradient(135deg, rgba(100, 160, 140, 0.9), rgba(80, 140, 120, 0.9));">导出网页</button>
-            
-            <div id="loading">
-                <div class="loading-spinner"></div>
-                <p>上传中...</p>
-            </div>
         </div>
         
         <div class="network-section glass-card">
@@ -638,7 +610,6 @@
             
             const errorEl = document.getElementById('stickerError');
             errorEl.classList.remove('show');
-            document.getElementById('loading').classList.add('active');
             
             const formData = new FormData();
             for (let file of files) {
@@ -652,8 +623,6 @@
                 });
                 const data = await res.json();
                 
-                document.getElementById('loading').classList.remove('active');
-                
                 if (data.success) {
                     await loadCustomStickers();
                     alert('贴纸上传成功！');
@@ -662,7 +631,6 @@
                     errorEl.classList.add('show');
                 }
             } catch (err) {
-                document.getElementById('loading').classList.remove('active');
                 errorEl.textContent = '上传失败，请重试';
                 errorEl.classList.add('show');
             }
@@ -673,7 +641,6 @@
             
             const errorEl = document.getElementById('photoError');
             errorEl.classList.remove('show');
-            document.getElementById('loading').classList.add('active');
             
             const formData = new FormData();
             for (let file of files) {
@@ -697,8 +664,6 @@
                 const res = await fetch('/api/upload', { method: 'POST', body: formData });
                 const data = await res.json();
                 
-                document.getElementById('loading').classList.remove('active');
-                
                 if (data.uploaded) {
                     images = [...images, ...data.uploaded];
                     
@@ -714,7 +679,6 @@
                     errorEl.classList.add('show');
                 }
             } catch (err) {
-                document.getElementById('loading').classList.remove('active');
                 errorEl.textContent = '上传失败，请重试';
                 errorEl.classList.add('show');
             }
