@@ -211,6 +211,9 @@ def share_to_gist():
     
     if resp.status_code == 201:
         result = resp.json()
-        return jsonify({'url': result.get('html_url')})
+        gist_id = result.get('id')
+        raw_url = f'https://gist.githubusercontent.com/savannaliu9-source/{gist_id}/raw/time-capsule.html'
+        view_url = f'https://htmlpreview.github.io/?{raw_url}'
+        return jsonify({'url': view_url, 'raw_url': raw_url})
     else:
         return jsonify({'error': 'Failed to create gist'}), 500
