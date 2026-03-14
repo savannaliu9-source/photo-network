@@ -1,15 +1,17 @@
 import os
 import uuid
 import base64
-import sqlite3
+import psycopg2
+from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-DB_FILE = 'photo_network.db'
+
+DATABASE_URL = os.environ.get('DATABASE_URL', 'postgresql://photo_network_user:56zWIQKw4MCNJ7wJirU9RgDwSrghIoGp@dpg-d6qhetvgi27c73a3cos0-a/photo_network')
 
 def get_db():
-    conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.row_factory = RealDictCursor
     return conn
 
 def init_db():
@@ -20,7 +22,7 @@ def init_db():
     c.execute('''CREATE TABLE IF NOT EXISTS images
                  (id TEXT PRIMARY KEY, network_id TEXT, data TEXT)''')
     c.execute('''CREATE TABLE IF NOT EXISTS stickers
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, x REAL, y REAL, size REAL)''')
+                 (id SERIAL PRIMARY KEY, data TEXT, x REAL, y REAL, size REAL)''')
     conn.commit()
     conn.close()
 
@@ -46,7 +48,7 @@ def create_network():
     
     conn = get_db()
     c = conn.cursor()
-    c.execute('INSERT INTO networks (id, name) VALUES (?, ?)',
+    c.execute('INSERT INTO networks (id, name) VALUES (%s, %s)',
               (network_id, data.get('name', 'My Photo Network')))
     conn.commit()
     conn.close()
@@ -57,14 +59,14 @@ def create_network():
 def get_network(network_id):
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT name FROM networks WHERE id = ?', (network_id,))
+    c.execute('SELECT name FROM networks WHERE id = %s', (network_id,))
     row = c.fetchone()
     
     if not row:
         conn.close()
         return jsonify({'error': 'Network not found'}), 404
     
-    c.execute('SELECT id, data FROM images WHERE network_id = ?', (network_id,))
+    c.execute('SELECT id, data FROM images WHERE network_id = %s', (network_id,))
     images = [{'id': row['id'], 'data': row['data']} for row in c.fetchall()]
     conn.close()
     
@@ -89,7 +91,7 @@ def upload_images():
             ext = get_ext(file.filename)
             mime_type = f'image/{ext}' if ext != 'jpg' else 'image/jpeg'
             
-            c.execute('INSERT INTO images (id, network_id, data) VALUES (?, ?, ?)',
+            c.execute('INSERT INTO images (id, network_id, data) VALUES (%s, %s, %s)',
                       (img_id, network_id, f'data:{mime_type};base64,{img_data}'))
             uploaded.append({'id': img_id, 'filename': file.filename})
     
@@ -135,7 +137,7 @@ def upload_sticker():
             y = 5 + random.random() * 85
             size = 60 + random.random() * 30
             
-            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
+            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (%s, %s, %s, %s)',
                       (f'data:{mime_type};base64,{img_data}', x, y, size))
     
     conn.commit()
@@ -154,10 +156,10 @@ def save_stickers():
     
     for sticker in stickers:
         if isinstance(sticker, dict):
-            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
+            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (%s, %s, %s, %s)',
                       (sticker.get('src', ''), sticker.get('x', 50), sticker.get('y', 50), sticker.get('size', 55)))
         else:
-            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
+            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (%s, %s, %s, %s)',
                       (sticker, 50, 50, 55))
     
     conn.commit()
@@ -168,7 +170,7 @@ def save_stickers():
 def get_image(img_id):
     conn = get_db()
     c = conn.cursor()
-    c.execute('SELECT data FROM images WHERE id = ?', (img_id,))
+    c.execute('SELECT data FROM images WHERE id = %s', (img_id,))
     row = c.fetchone()
     conn.close()
     
