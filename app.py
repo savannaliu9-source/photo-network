@@ -1,21 +1,30 @@
 import os
-import json
 import uuid
 import base64
+import sqlite3
 from flask import Flask, render_template, request, jsonify
 
 app = Flask(__name__)
-DATA_FILE = 'data.json'
+DB_FILE = 'photo_network.db'
 
-def load_data():
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return {'networks': {}, 'images': {}, 'stickers': {}}
+def get_db():
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row
+    return conn
 
-def save_data(data):
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+def init_db():
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('''CREATE TABLE IF NOT EXISTS networks
+                 (id TEXT PRIMARY KEY, name TEXT, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS images
+                 (id TEXT PRIMARY KEY, network_id TEXT, data TEXT)''')
+    c.execute('''CREATE TABLE IF NOT EXISTS stickers
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT, data TEXT, x REAL, y REAL, size REAL)''')
+    conn.commit()
+    conn.close()
+
+init_db()
 
 def get_ext(filename):
     if '.' in filename:
@@ -35,32 +44,31 @@ def create_network():
     data = request.json
     network_id = str(uuid.uuid4())[:8]
     
-    db = load_data()
-    db['networks'][network_id] = {
-        'name': data.get('name', 'My Photo Network'),
-        'image_ids': []
-    }
-    save_data(db)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('INSERT INTO networks (id, name) VALUES (?, ?)',
+              (network_id, data.get('name', 'My Photo Network')))
+    conn.commit()
+    conn.close()
     
     return jsonify({'network_id': network_id})
 
 @app.route('/api/network/<network_id>')
 def get_network(network_id):
-    db = load_data()
-    network = db['networks'].get(network_id)
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT name FROM networks WHERE id = ?', (network_id,))
+    row = c.fetchone()
     
-    if not network:
+    if not row:
+        conn.close()
         return jsonify({'error': 'Network not found'}), 404
     
-    images = []
-    for img_id in network.get('image_ids', []):
-        if img_id in db['images']:
-            images.append({
-                'id': img_id,
-                'data': db['images'][img_id]
-            })
+    c.execute('SELECT id, data FROM images WHERE network_id = ?', (network_id,))
+    images = [{'id': row['id'], 'data': row['data']} for row in c.fetchall()]
+    conn.close()
     
-    return jsonify({'name': network.get('name', 'My Photo Network'), 'nodes': images})
+    return jsonify({'name': row['name'], 'nodes': images})
 
 @app.route('/api/upload', methods=['POST'])
 def upload_images():
@@ -71,7 +79,8 @@ def upload_images():
         return jsonify({'error': 'No files selected'}), 400
     
     uploaded = []
-    db = load_data()
+    conn = get_db()
+    c = conn.cursor()
     
     for file in files:
         if file and allowed_file(file.filename):
@@ -80,18 +89,28 @@ def upload_images():
             ext = get_ext(file.filename)
             mime_type = f'image/{ext}' if ext != 'jpg' else 'image/jpeg'
             
-            db['images'][img_id] = f'data:{mime_type};base64,{img_data}'
-            if network_id in db['networks']:
-                db['networks'][network_id]['image_ids'].append(img_id)
+            c.execute('INSERT INTO images (id, network_id, data) VALUES (?, ?, ?)',
+                      (img_id, network_id, f'data:{mime_type};base64,{img_data}'))
             uploaded.append({'id': img_id, 'filename': file.filename})
     
-    save_data(db)
+    conn.commit()
+    conn.close()
     return jsonify({'uploaded': uploaded})
 
 @app.route('/api/stickers')
 def get_stickers():
-    db = load_data()
-    stickers = list(db.get('stickers', {}).values())
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT data, x, y, size FROM stickers')
+    stickers = []
+    for row in c.fetchall():
+        stickers.append({
+            'src': row['data'],
+            'x': row['x'] if row['x'] else 50,
+            'y': row['y'] if row['y'] else 50,
+            'size': row['size'] if row['size'] else 55
+        })
+    conn.close()
     return jsonify({'stickers': stickers})
 
 @app.route('/api/sticker', methods=['POST'])
@@ -101,44 +120,55 @@ def upload_sticker():
     if not files or files[0].filename == '':
         return jsonify({'error': 'No files selected'}), 400
     
-    db = load_data()
+    conn = get_db()
+    c = conn.cursor()
     
-    existing_stickers = db.get('stickers', {})
-    new_stickers = {}
-    
-    idx = len(existing_stickers)
     for file in files:
         if file and allowed_file(file.filename):
-            sticker_id = str(uuid.uuid4())[:8]
             img_data = base64.b64encode(file.read()).decode('utf-8')
             ext = get_ext(file.filename)
             mime_type = f'image/{ext}' if ext != 'jpg' else 'image/jpeg'
             
-            new_stickers[str(idx)] = f'data:{mime_type};base64,{img_data}'
-            idx += 1
+            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
+                      (f'data:{mime_type};base64,{img_data}', 50, 50, 55))
     
-    all_stickers = {**existing_stickers, **new_stickers}
-    db['stickers'] = all_stickers
-    save_data(db)
-    
-    return jsonify({'stickers': list(all_stickers.values())})
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
 
 @app.route('/api/stickers', methods=['POST'])
 def save_stickers():
     data = request.json
     stickers = data.get('stickers', [])
-    db = load_data()
-    db['stickers'] = {str(i): s for i, s in enumerate(stickers)}
-    save_data(db)
+    
+    conn = get_db()
+    c = conn.cursor()
+    
+    c.execute('DELETE FROM stickers')
+    
+    for sticker in stickers:
+        if isinstance(sticker, dict):
+            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
+                      (sticker.get('src', ''), sticker.get('x', 50), sticker.get('y', 50), sticker.get('size', 55)))
+        else:
+            c.execute('INSERT INTO stickers (data, x, y, size) VALUES (?, ?, ?, ?)',
+                      (sticker, 50, 50, 55))
+    
+    conn.commit()
+    conn.close()
     return jsonify({'success': True})
 
 @app.route('/api/image/<img_id>')
 def get_image(img_id):
-    db = load_data()
-    img = db['images'].get(img_id)
-    if not img:
+    conn = get_db()
+    c = conn.cursor()
+    c.execute('SELECT data FROM images WHERE id = ?', (img_id,))
+    row = c.fetchone()
+    conn.close()
+    
+    if not row:
         return jsonify({'error': 'Image not found'}), 404
-    return jsonify({'data': img})
+    return jsonify({'data': row['data']})
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
