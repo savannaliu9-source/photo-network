@@ -199,8 +199,8 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(90, 230, 223, 0.95);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
             z-index: 1000;
             justify-content: center;
             align-items: center;
@@ -419,53 +419,40 @@
         
         function renderCustomStickers() {
             const container = document.getElementById('pageStickers');
+            container.innerHTML = '';
             
             customStickers.forEach((sticker, i) => {
+                const img = document.createElement('img');
+                img.className = 'page-sticker';
+                
                 let posX, posY, size;
                 
                 if (typeof sticker === 'object' && sticker.src) {
+                    img.src = sticker.src;
                     posX = sticker.x || (3 + Math.random() * 88);
                     posY = sticker.y || (3 + Math.random() * 88);
-                    size = sticker.size || 65;
-                    
-                    const img = document.createElement('img');
-                    img.className = 'page-sticker';
-                    img.src = sticker.src;
-                    img.dataset.isImage = 'true';
-                    img.style.width = size + 'px';
-                    img.dataset.index = i;
-                    img.dataset.size = size;
-                    
-                    img.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        selectSticker(img);
-                    });
-                    
-                    makeDraggable(img);
-                    container.appendChild(img);
+                    size = sticker.size || 55;
                 } else {
+                    img.src = sticker;
                     posX = 3 + Math.random() * 88;
                     posY = 3 + Math.random() * 88;
-                    
-                    const span = document.createElement('span');
-                    span.className = 'page-sticker';
-                    span.textContent = sticker;
-                    span.dataset.isImage = 'false';
-                    span.dataset.index = i;
-                    
-                    span.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        selectSticker(span);
-                    });
-                    
-                    makeDraggable(span);
-                    container.appendChild(span);
+                    size = 55;
                 }
                 
-                const el = container.lastChild;
-                el.style.left = posX + '%';
-                el.style.top = posY + '%';
-                el.style.animationDelay = (Math.random() * 3) + 's';
+                img.dataset.index = i;
+                img.dataset.size = size;
+                img.style.width = size + 'px';
+                img.style.left = posX + '%';
+                img.style.top = posY + '%';
+                img.style.animationDelay = (Math.random() * 3) + 's';
+                
+                img.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    selectSticker(img);
+                });
+                
+                makeDraggable(img);
+                container.appendChild(img);
             });
         }
         
@@ -513,21 +500,14 @@
         
         async function saveStickerPositions() {
             const stickers = [];
-            const container = document.getElementById('pageStickers');
-            const containerWidth = container.offsetWidth || window.innerWidth;
-            const containerHeight = container.offsetHeight || window.innerHeight;
-            
             document.querySelectorAll('.page-sticker').forEach(el => {
                 const rect = el.getBoundingClientRect();
-                const centerX = el.offsetLeft + rect.width / 2;
-                const centerY = el.offsetTop + rect.height / 2;
-                const size = parseFloat(el.dataset.size) || (el.dataset.isImage === 'true' ? 65 : 40);
-                
+                const containerRect = document.getElementById('pageStickers').getBoundingClientRect();
                 stickers.push({
-                    src: el.dataset.isImage === 'true' ? el.src : el.textContent,
-                    x: (centerX / containerWidth) * 100,
-                    y: (centerY / containerHeight) * 100,
-                    size: size
+                    src: el.src,
+                    x: ((el.offsetLeft + rect.width/2) / containerRect.width) * 100,
+                    y: ((el.offsetTop + rect.height/2) / containerRect.height) * 100,
+                    size: parseFloat(el.dataset.size) || 55
                 });
             });
             
@@ -673,9 +653,8 @@
                 
                 document.getElementById('loading').classList.remove('active');
                 
-                if (data.stickers) {
-                    customStickers = [...customStickers, ...data.stickers];
-                    renderCustomStickers();
+                if (data.success) {
+                    await loadCustomStickers();
                     alert('贴纸上传成功！');
                 } else if (data.error) {
                     errorEl.textContent = data.error;
